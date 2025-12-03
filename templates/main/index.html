@@ -11,4 +11,23 @@
     Hello <a href="{% url 'main:index' %}"></a>
 </body>
 
+<script type="text/javascript">
+    console.log("Hello");
+
+    const websocketUlr = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/connect/`;
+    const socket = new WebSocket(websocketUlr);
+
+    socket.onopen = function (e) {
+        console.log("Connected to WebSocket server");
+    };
+
+    socket.onmessage = function (e) {
+        console.log("Received message from WebSocket server: " + e.data);
+    };
+
+    socket.onclose = function (e) {
+        console.log("Disconnected from WebSocket server");
+    };
+</script>
+
 </html>

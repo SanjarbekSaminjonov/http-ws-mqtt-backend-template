@@ -6,3 +6,4 @@ django-redis==6.0.0
 channels-redis==4.3.0
 channels[daphne]==4.3.2
 uvicorn==0.38.0
+aiomqtt==2.4.0

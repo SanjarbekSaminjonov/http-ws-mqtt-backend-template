@@ -55,6 +55,7 @@ INSTALLED_APPS = (
     ]
     + [
         "main.apps.MainConfig",
+        "mqtt_service.apps.MqttServiceConfig",
     ]
 )
 
@@ -174,3 +175,10 @@ MEDIA_ROOT = BASE_DIR / "media"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# MQTT Settings
+MQTT_BROKER_HOST = env.str("MQTT_BROKER_HOST")
+MQTT_BROKER_PORT = env.int("MQTT_BROKER_PORT")
+MQTT_USERNAME = env.str("EMQX_BACKEND_USERNAME")
+MQTT_PASSWORD = env.str("EMQX_BACKEND_PASSWORD")

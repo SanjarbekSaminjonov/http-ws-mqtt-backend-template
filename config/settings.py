@@ -25,16 +25,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env.str("SECRET_KEY")
+SECRET_KEY = env.str("DJANGO_SECRET_KEY")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool("DEBUG", default=False)
+DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 
-CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
 
 # Application definition
@@ -53,7 +53,9 @@ INSTALLED_APPS = (
         "rest_framework_simplejwt",
         "channels",
     ]
-    + []
+    + [
+        "main.apps.MainConfig",
+    ]
 )
 
 MIDDLEWARE = [
@@ -71,7 +73,10 @@ ROOT_URLCONF = "config.urls"
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{env.str('REDIS_HOST')}:{env.int('REDIS_PORT')}/{env.int('REDIS_DB')}",
+        "LOCATION": (
+            f"redis://:{env.str('REDIS_PASSWORD')}@"
+            f"{env.str('REDIS_HOST')}:{env.int('REDIS_PORT')}/1"
+        ),
     },
 }
 
@@ -98,7 +103,12 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [(env.str("REDIS_HOST"), env.int("REDIS_PORT"))],
+            "hosts": [
+                (
+                    f"redis://:{env.str('REDIS_PASSWORD')}@"
+                    f"{env.str('REDIS_HOST')}:{env.int('REDIS_PORT')}/0"
+                )
+            ],
         },
     },
 }
@@ -108,8 +118,12 @@ CHANNEL_LAYERS = {
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env.str("POSTGRES_DB"),
+        "USER": env.str("POSTGRES_USER"),
+        "PASSWORD": env.str("POSTGRES_PASSWORD"),
+        "HOST": env.str("POSTGRES_HOST"),
+        "PORT": env.int("POSTGRES_PORT"),
     }
 }
 

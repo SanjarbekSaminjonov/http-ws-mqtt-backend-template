@@ -36,7 +36,7 @@ class ManagementConsumer(AsyncJsonWebsocketConsumer):
         elif action == "echo":
             message = content.get("message", "")
             await self.send_json({"type": "echo", "message": message})
-        ...
+        # Add more action handlers here
 
     async def mqtt_message(self, event):
         """Handler for MQTT messages from Channel Layer"""

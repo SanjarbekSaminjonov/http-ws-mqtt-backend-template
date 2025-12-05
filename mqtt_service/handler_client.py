@@ -76,9 +76,10 @@ class MQTTHandlerClient:
         ]:
             # Shared subscription format: $share/{group_name}/{topic}
             shared_topic = f"$share/handlers/{topic}"
-            await client.subscribe(shared_topic)
+            await client.subscribe(shared_topic, qos=2)
             logger.info(
-                f"Handler {self.handler_id}: Subscribed to shared topic: {shared_topic}"
+                f"Handler {self.handler_id}: Subscribed to shared topic: {shared_topic} "
+                f"(QoS=2)"
             )
 
     async def handle_messages(self, client: aiomqtt.Client):
@@ -109,7 +110,7 @@ class MQTTHandlerClient:
                 )
 
     async def publish(
-        self, topic: str, payload: str, qos: int = 0, retain: bool = False
+        self, topic: str, payload: str, qos: int = 1, retain: bool = False
     ):
         """
         Publish message to MQTT broker
@@ -128,7 +129,9 @@ class MQTTHandlerClient:
             await self._client.publish(topic, payload, qos=qos, retain=retain)
             logger.info(f"Handler {self.handler_id}: Published to '{topic}': {payload}")
         except Exception as e:
-            logger.error(f"Handler {self.handler_id}: Publish error: {e}", exc_info=True)
+            logger.error(
+                f"Handler {self.handler_id}: Publish error: {e}", exc_info=True
+            )
 
     async def run(self):
         """

@@ -1,5 +1,7 @@
 # Django MQTT WebSocket Backend Template
 
+### Django + MQTT (aiomqtt, EMQX) + WebSocket (Channels) + Celery + PostgreSQL + Redis
+
 Universal backend template for IoT/MQTT projects with Celery task queue.
 
 ## 🎯 Core Components

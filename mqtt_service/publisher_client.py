@@ -61,7 +61,7 @@ class MQTTPublisherClient:
 
                 topic = message.get("topic")
                 payload = message.get("payload", "")
-                qos = message.get("qos", 0)
+                qos = message.get("qos", 1)
                 retain = message.get("retain", False)
 
                 # Publish to MQTT broker

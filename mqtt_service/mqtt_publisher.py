@@ -21,7 +21,7 @@ class MQTTPublisherInterface:
     QUEUE_KEY = MQTTPublisherClient.QUEUE_KEY
 
     def publish(
-        self, topic: str, payload: Any, qos: int = 0, retain: bool = False
+        self, topic: str, payload: Any, qos: int = 1, retain: bool = False
     ) -> bool:
         """
         Queue MQTT message for publishing (sync context)
@@ -59,7 +59,7 @@ class MQTTPublisherInterface:
             return False
 
     async def publish_async(
-        self, topic: str, payload: Any, qos: int = 0, retain: bool = False
+        self, topic: str, payload: Any, qos: int = 1, retain: bool = False
     ) -> bool:
         """
         Queue MQTT message for publishing (async context)

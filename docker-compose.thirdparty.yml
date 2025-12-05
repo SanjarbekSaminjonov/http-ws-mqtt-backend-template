@@ -37,6 +37,7 @@ services:
       - EMQX_NODE__COOKIE=supersecretcookie
       - EMQX_CLUSTER__DISCOVERY_STRATEGY=static
       - EMQX_CLUSTER__STATIC__SEEDS=emqx@emqx
+      - EMQX_ALLOW_ANONYMOUS="false"
     volumes:
       - emqx_data:/opt/emqx/data
       - emqx_log:/opt/emqx/log

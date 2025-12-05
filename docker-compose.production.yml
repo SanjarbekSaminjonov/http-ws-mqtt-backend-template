@@ -37,6 +37,8 @@ services:
       - EMQX_NODE__COOKIE=supersecretcookie
       - EMQX_CLUSTER__DISCOVERY_STRATEGY=static
       - EMQX_CLUSTER__STATIC__SEEDS=emqx@emqx
+      - EMQX_ALLOW_ANONYMOUS="false"
+
     volumes:
       - emqx_data:/opt/emqx/data
       - emqx_log:/opt/emqx/log
@@ -50,7 +52,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/django/Dockerfile
-    container_name: django_app
+    container_name: django-app
     restart: always
     command: bash /start_django
     volumes:
@@ -75,11 +77,11 @@ services:
     build:
       context: .
       dockerfile: ./compose/django/Dockerfile
-    container_name: mqtt_handler_1
+    container_name: mqtt-handler-1
     restart: always
     command: bash /start_mqtt_handler
     environment:
-      - MQTT_HANDLER_ID=mqtt_handler_1
+      - MQTT_HANDLER_ID=mqtt-handler-1
     env_file:
       - .env
     depends_on:
@@ -91,11 +93,11 @@ services:
     build:
       context: .
       dockerfile: ./compose/django/Dockerfile
-    container_name: mqtt_publisher_1
+    container_name: mqtt-publisher-1
     restart: always
     command: bash /start_mqtt_publisher
     environment:
-      - MQTT_PUBLISHER_ID=mqtt_publisher_1
+      - MQTT_PUBLISHER_ID=mqtt-publisher-1
     env_file:
       - .env
     depends_on:
@@ -107,7 +109,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/django/Dockerfile
-    container_name: celery_worker
+    container_name: celery-worker
     restart: always
     command: bash /start_celery_worker
     env_file:
@@ -121,7 +123,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/django/Dockerfile
-    container_name: celery_beat
+    container_name: celery-beat
     restart: always
     command: bash /start_celery_beat
     env_file:
@@ -135,7 +137,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/django/Dockerfile
-    container_name: celery_flower
+    container_name: celery-flower
     restart: always
     command: bash /start_celery_flower
     env_file:

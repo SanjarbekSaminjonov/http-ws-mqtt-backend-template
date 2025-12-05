@@ -11,8 +11,10 @@ services:
       - .env
 
   redis:
-    image: redis:custom
-    build: ./compose/redis
+    image: redis_custom
+    build:
+      context: .
+      dockerfile: ./compose/redis/Dockerfile
     container_name: redis
     restart: always
     ports:
@@ -42,34 +44,6 @@ services:
       - .env
     depends_on:
       - postgres
-
-  # mqtt_worker_1:
-  #   build: .
-  #   container_name: mqtt_worker_1
-  #   restart: always
-  #   command: python manage.py run_mqtt_service --worker-id worker_1
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - MQTT_WORKER_ID=worker_1
-  #   depends_on:
-  #     - postgres
-  #     - redis
-  #     - emqx
-
-  # mqtt_worker_2:
-  #   build: .
-  #   container_name: mqtt_worker_2
-  #   restart: always
-  #   command: python manage.py run_mqtt_service --worker-id worker_2
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - MQTT_WORKER_ID=worker_2
-  #   depends_on:
-  #     - postgres
-  #     - redis
-  #     - emqx
 
 volumes:
   postgres_data:

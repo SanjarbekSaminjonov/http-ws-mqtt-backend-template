@@ -1,0 +1,134 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+
+  redis:
+    image: redis_custom
+    build:
+      context: .
+      dockerfile: ./compose/redis/Dockerfile
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    env_file:
+      - .env
+
+  emqx:
+    image: emqx:5.8.8
+    container_name: emqx
+    restart: always
+    ports:
+      - "1883:1883"
+      - "18083:18083"
+    environment:
+      - EMQX_NAME=emqx
+      - EMQX_NODE__NAME=emqx@emqx
+      - EMQX_NODE__COOKIE=supersecretcookie
+      - EMQX_CLUSTER__DISCOVERY_STRATEGY=static
+      - EMQX_CLUSTER__STATIC__SEEDS=emqx@emqx
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+
+  django_app:
+    image: django_core
+    build:
+      context: .
+      dockerfile: ./compose/django/Dockerfile
+    container_name: django_app
+    restart: always
+    command: bash /start_django
+    volumes:
+      - ./media:/app/media
+      - ./static:/app/static
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "bash", "/check_health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    depends_on:
+      - redis
+      - emqx
+
+  mqtt_worker_1:
+    image: django_core
+    build:
+      context: .
+      dockerfile: ./compose/django/Dockerfile
+    container_name: mqtt_worker_1
+    restart: always
+    command: bash /start_mqtt_handler 1
+    env_file:
+      - .env
+    depends_on:
+      django_app:
+        condition: service_healthy
+
+  celery_worker:
+    image: django_core
+    build:
+      context: .
+      dockerfile: ./compose/django/Dockerfile
+    container_name: celery_worker
+    restart: always
+    command: bash /start_celery_worker
+    env_file:
+      - .env
+    depends_on:
+      django_app:
+        condition: service_healthy
+
+  celery_beat:
+    image: django_core
+    build:
+      context: .
+      dockerfile: ./compose/django/Dockerfile
+    container_name: celery_beat
+    restart: always
+    command: bash /start_celery_beat
+    env_file:
+      - .env
+    depends_on:
+      django_app:
+        condition: service_healthy
+
+  celery_flower:
+    image: django_core
+    build:
+      context: .
+      dockerfile: ./compose/django/Dockerfile
+    container_name: celery_flower
+    restart: always
+    command: bash /start_celery_flower
+    env_file:
+      - .env
+    ports:
+      - "5555:5555"
+    depends_on:
+      - celery_worker
+
+volumes:
+  postgres_data:
+  redis_data:
+  emqx_data:
+  emqx_log:

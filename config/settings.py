@@ -50,8 +50,8 @@ INSTALLED_APPS = (
         "django.contrib.staticfiles",
     ]
     + [
-        "rest_framework_simplejwt",
         "channels",
+        "django_celery_beat",
     ]
     + [
         "main.apps.MainConfig",
@@ -182,3 +182,21 @@ MQTT_BROKER_HOST = env.str("MQTT_BROKER_HOST")
 MQTT_BROKER_PORT = env.int("MQTT_BROKER_PORT")
 MQTT_USERNAME = env.str("EMQX_BACKEND_USERNAME")
 MQTT_PASSWORD = env.str("EMQX_BACKEND_PASSWORD")
+
+
+# Celery Settings
+CELERY_BROKER_URL = (
+    f"redis://:{env.str('REDIS_PASSWORD')}@"
+    f"{env.str('REDIS_HOST')}:{env.int('REDIS_PORT')}/2"
+)
+CELERY_RESULT_BACKEND = (
+    f"redis://:{env.str('REDIS_PASSWORD')}@"
+    f"{env.str('REDIS_HOST')}:{env.int('REDIS_PORT')}/3"
+)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+CELERY_RESULT_EXPIRES = 3600  # 1 hour

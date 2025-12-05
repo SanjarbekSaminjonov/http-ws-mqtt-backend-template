@@ -20,6 +20,8 @@ def check_mqtt_user(request):
     VALID_USERNAME = settings.MQTT_USERNAME
     VALID_PASSWORD = settings.MQTT_PASSWORD
 
+    print(f"{username=}, {password=}, {VALID_USERNAME=}, {VALID_PASSWORD=}")
+
     if username == VALID_USERNAME and password == VALID_PASSWORD:
         return JsonResponse({"authenticated": True}, status=200)
     else:

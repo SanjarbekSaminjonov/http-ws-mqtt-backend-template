@@ -2,7 +2,6 @@
 MQTT Commander - Publish messages from Django
 """
 
-import asyncio
 import logging
 import json
 from typing import Any

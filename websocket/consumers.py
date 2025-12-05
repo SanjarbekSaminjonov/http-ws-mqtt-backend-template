@@ -1,6 +1,6 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
-from utils.user_status_cache import is_user_online, set_user_status
+from utils.user_status_cache import set_user_status
 
 
 class ManagementConsumer(AsyncJsonWebsocketConsumer):
@@ -37,13 +37,11 @@ class ManagementConsumer(AsyncJsonWebsocketConsumer):
         elif action == "echo":
             message = content.get("message", "")
             await self.send_json({"type": "echo", "message": message})
-        ...
+        # Add more action handlers here
 
     async def mqtt_message(self, event):
         """Handler for MQTT messages from Channel Layer"""
-        owner_id = 1  # TODO: Fetch device owner ID from DB if needed
-        if is_user_online(owner_id):
-            await self.send_message(ManagementConsumer.user_group_name(owner_id), event)
+        await self.send_json(event)
 
     async def send_message(self, group_name, message):
         await self.channel_layer.group_send(

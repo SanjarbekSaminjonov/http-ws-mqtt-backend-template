@@ -16,7 +16,7 @@ class ManagementConsumer(AsyncJsonWebsocketConsumer):
             await self.close()
             return
 
-        self.group_name = self.user_group_name(self.user.pk)
+        self.group_name = ManagementConsumer.user_group_name(self.user.pk)
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         set_user_status(self.user.pk, True)
         await self.accept()
@@ -43,7 +43,7 @@ class ManagementConsumer(AsyncJsonWebsocketConsumer):
         """Handler for MQTT messages from Channel Layer"""
         owner_id = 1  # TODO: Fetch device owner ID from DB if needed
         if is_user_online(owner_id):
-            await self.send_message(self.user_group_name(owner_id), event)
+            await self.send_message(ManagementConsumer.user_group_name(owner_id), event)
 
     async def send_message(self, group_name, message):
         await self.channel_layer.group_send(

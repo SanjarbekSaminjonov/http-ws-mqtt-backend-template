@@ -38,16 +38,8 @@ class MessageHandler:
 
             # TODO: Add your routing logic here
 
-            # Example: Send to WebSocket
-            # await self.send_to_websocket(topic, data)
-
         except Exception as e:
-            logger.error(f"Error handling '{topic}': {e}", exc_info=True)
-
-    async def send_to_websocket(self, topic: str, data: dict):
-        """Send to WebSocket via Channel Layer"""
-        if self.channel_layer:
-            await self.channel_layer.group_send(
-                "mqtt_updates",
-                {"type": "mqtt_message", "topic": topic, "data": data},
+            logger.error(
+                f"Error handling '{topic = }, {message = }': {e}",
+                exc_info=True,
             )

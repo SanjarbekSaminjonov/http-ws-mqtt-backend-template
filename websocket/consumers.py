@@ -21,7 +21,8 @@ class ManagementConsumer(AsyncJsonWebsocketConsumer):
         set_user_status(self.user.pk, True)
         await self.accept()
 
-    def user_group_name(self, user_id):
+    @staticmethod
+    def user_group_name(user_id):
         return f"user_{user_id}"
 
     async def disconnect(self, close_code):

@@ -1,6 +1,7 @@
 """
-Async MQTT Client Handler
+MQTT Handler Client
 Handles connection, subscription, and message processing with shared subscription support
+Similar to publisher pattern for consistency
 """
 
 import asyncio
@@ -13,22 +14,23 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-class MQTTClient:
+class MQTTHandlerClient:
     """
-    Async MQTT client with shared subscription support for multi-worker setup
+    MQTT handler client with shared subscription support for multi-worker setup
+    Receives messages from MQTT broker and processes them
     """
 
     def __init__(
         self,
         message_handler: Callable,
-        worker_id: str,
+        handler_id: str,
     ):
         """
-        Initialize MQTT client
+        Initialize MQTT handler client
 
         Args:
             message_handler: Async callable to handle received messages
-            worker_id: Unique worker identifier for logging
+            handler_id: Unique handler identifier for logging
         """
         self.broker_host = settings.MQTT_BROKER_HOST
         self.broker_port = settings.MQTT_BROKER_PORT
@@ -36,7 +38,7 @@ class MQTTClient:
         self.password = settings.MQTT_PASSWORD
 
         self.message_handler = message_handler
-        self.worker_id = worker_id
+        self.handler_id = handler_id
         self._client: Optional[aiomqtt.Client] = None
         self._reconnect_interval = 5  # seconds
 
@@ -55,7 +57,7 @@ class MQTTClient:
             port=self.broker_port,
             username=self.username if self.username else None,
             password=self.password if self.password else None,
-            identifier=f"workers-{self.worker_id}",
+            identifier=f"handlers-{self.handler_id}",
             keepalive=60,
             clean_session=True,
         )
@@ -73,10 +75,10 @@ class MQTTClient:
             # Add your topics here
         ]:
             # Shared subscription format: $share/{group_name}/{topic}
-            shared_topic = f"$share/workers/{topic}"
+            shared_topic = f"$share/handlers/{topic}"
             await client.subscribe(shared_topic)
             logger.info(
-                f"Worker {self.worker_id}: Subscribed to shared topic: {shared_topic}"
+                f"Handler {self.handler_id}: Subscribed to shared topic: {shared_topic}"
             )
 
     async def handle_messages(self, client: aiomqtt.Client):
@@ -93,7 +95,7 @@ class MQTTClient:
                 topic = str(message.topic)
 
                 logger.info(
-                    f"Worker {self.worker_id}: Received message on topic '{topic}': {payload}"
+                    f"Handler {self.handler_id}: Received message on topic '{topic}': {payload}"
                 )
 
                 # Call message handler if provided
@@ -102,7 +104,7 @@ class MQTTClient:
 
             except Exception as e:
                 logger.error(
-                    f"Worker {self.worker_id}: Error processing message: {e}",
+                    f"Handler {self.handler_id}: Error processing message: {e}",
                     exc_info=True,
                 )
 
@@ -124,9 +126,9 @@ class MQTTClient:
 
         try:
             await self._client.publish(topic, payload, qos=qos, retain=retain)
-            logger.info(f"Worker {self.worker_id}: Published to '{topic}': {payload}")
+            logger.info(f"Handler {self.handler_id}: Published to '{topic}': {payload}")
         except Exception as e:
-            logger.error(f"Worker {self.worker_id}: Publish error: {e}", exc_info=True)
+            logger.error(f"Handler {self.handler_id}: Publish error: {e}", exc_info=True)
 
     async def run(self):
         """
@@ -138,7 +140,7 @@ class MQTTClient:
                 async with self.create_client() as client:
                     self._client = client
                     logger.info(
-                        f"Worker {self.worker_id}: Connected to MQTT broker at "
+                        f"Handler {self.handler_id}: Connected to MQTT broker at "
                         f"{self.broker_host}:{self.broker_port}"
                     )
 
@@ -150,18 +152,18 @@ class MQTTClient:
 
             except aiomqtt.MqttError as error:
                 logger.error(
-                    f"Worker {self.worker_id}: MQTT error: {error}. "
+                    f"Handler {self.handler_id}: MQTT error: {error}. "
                     f"Reconnecting in {self._reconnect_interval} seconds..."
                 )
                 await asyncio.sleep(self._reconnect_interval)
 
             except asyncio.CancelledError:
-                logger.info(f"Worker {self.worker_id}: MQTT client cancelled")
+                logger.info(f"Handler {self.handler_id}: MQTT client cancelled")
                 break
 
             except Exception as e:
                 logger.error(
-                    f"Worker {self.worker_id}: Unexpected error: {e}. "
+                    f"Handler {self.handler_id}: Unexpected error: {e}. "
                     f"Reconnecting in {self._reconnect_interval} seconds...",
                     exc_info=True,
                 )

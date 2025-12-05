@@ -6,7 +6,7 @@ Universal backend template for IoT/MQTT projects with Celery task queue.
 
 - ✅ Django 5.2.9 (ASGI + Channels)
 - ✅ MQTT Handler (aiomqtt, multi-worker, shared subscription)
-- ✅ MQTT Commander (publish from Django)
+- ✅ MQTT Publisher (queue-based, persistent connection)
 - ✅ WebSocket (real-time updates)
 - ✅ Celery (async tasks + periodic scheduler)
 - ✅ PostgreSQL 16, Redis, EMQX 5.8.8
@@ -15,15 +15,15 @@ Universal backend template for IoT/MQTT projects with Celery task queue.
 ## 🏗️ Architecture
 
 ```
-MQTT Devices → EMQX Broker → MQTT Workers (shared subscription)
-                                    ↓
-                              PostgreSQL + Channel Layer
-                                    ↓
+MQTT Devices → EMQX Broker → MQTT Handlers (shared subscription)
+                                ↓
+                            PostgreSQL + Channel Layer
+                                ↓
                             WebSocket Clients (owners/admins)
 
-Django Views/Celery → MQTT Commander → EMQX → Devices
+Django Views/Celery → mqtt_publisher (Redis queue) → MQTT Publisher Client → EMQX → Devices
 
-Celery Beat → Periodic Tasks → MQTT Commander → EMQX → Devices
+Celery Beat → Periodic Tasks → mqtt_publisher (Redis queue) → MQTT Publisher Client → EMQX → Devices
 ```
 
 ## 🚀 Quick Start
@@ -53,16 +53,19 @@ python manage.py createsuperuser
 # 6. Run Django locally
 python manage.py runserver
 
-# 7. Run MQTT worker (separate terminal)
-python manage.py run_mqtt_service --worker-id local_1
+# 7. Run MQTT handler (separate terminal)
+python manage.py run_mqtt_handler --handler-id handler_local_1
 
-# 8. Run Celery worker (separate terminal)
+# 8. Run MQTT publisher (separate terminal)
+python manage.py run_mqtt_publisher --publisher-id publisher_local_1
+
+# 9. Run Celery worker (separate terminal)
 celery -A config worker -l INFO
 
-# 9. Run Celery beat (separate terminal)
+# 10. Run Celery beat (separate terminal)
 celery -A config beat -l INFO
 
-# 10. Run Celery Flower (separate terminal)
+# 11. Run Celery Flower (separate terminal)
 celery -A config flower --port=5555
 ```
 
@@ -97,7 +100,8 @@ docker exec -it django_app python manage.py createsuperuser
 - Redis  
 - EMQX
 - Django App
-- MQTT Worker
+- MQTT Handler
+- MQTT Publisher
 - Celery Worker
 - Celery Beat
 - Celery Flower
@@ -110,11 +114,12 @@ docker exec -it django_app python manage.py createsuperuser
 │   ├── models.py        # Add your models here
 │   ├── tasks.py         # Celery tasks
 │   └── views.py
-├── mqtt_service/        # MQTT handler service
-│   ├── client.py        # MQTT async client
-│   ├── handlers.py      # Message handlers (customize here)
-│   ├── commander.py     # Publish to MQTT
-│   └── runner.py        # Standalone runner
+├── mqtt_service/        # MQTT services
+│   ├── handler_client.py      # MQTTHandlerClient (subscriber/handler)
+│   ├── publisher_client.py    # MQTTPublisherClient (queue-based publisher)
+│   ├── mqtt_publisher.py      # mqtt_publisher interface (Django API)
+│   ├── handlers.py            # Message handlers (customize here)
+│   └── management/commands/   # run_mqtt_handler, run_mqtt_publisher
 ├── websocket/           # WebSocket consumers
 │   ├── consumers.py     # WebSocket logic
 │   └── routing.py       # WebSocket routes
@@ -161,13 +166,13 @@ from main.tasks import process_device_data
 process_device_data.delay(123, {"temp": 25})
 ```
 
-### 2. Publish MQTT from Django
+### 2. Publish MQTT from Django (queue + persistent publisher)
 
 ```python
 # views.py or tasks.py
-from mqtt_service.commander import publish_mqtt_message
+from mqtt_service import mqtt_publisher
 
-publish_mqtt_message("device/001/cmd", {"action": "start"})
+mqtt_publisher.publish("device/001/cmd", {"action": "start"}, qos=1)
 ```
 
 ### 3. Handle MQTT Messages
@@ -207,8 +212,11 @@ ws.onmessage = (event) => {
 ## 🧪 Testing
 
 ```bash
-# Test MQTT connection
-python mqtt_service/runner.py
+# Test MQTT handler (local)
+python manage.py run_mqtt_handler --worker-id handler_test_1
+
+# Test MQTT publisher (local)
+python manage.py run_mqtt_publisher --publisher-id publisher_test_1
 
 # Test Celery task
 python manage.py shell
@@ -233,7 +241,7 @@ python manage.py shell
 ```bash
 # Development
 python manage.py runserver
-python manage.py run_mqtt_service --worker-id dev_1
+python manage.py run_mqtt_handler --handler-id handler_dev_1
 celery -A config worker -l INFO
 celery -A config beat -l INFO
 celery -A config flower --port=5555
@@ -250,7 +258,8 @@ docker compose -f docker-compose.thirdparty.yml down
 
 ## 📝 Notes
 
-- **MQTT Workers**: Use shared subscription (`$share/workers/{topic}`) for load balancing
+- **MQTT Handlers**: Use shared subscription (`$share/handlers/{topic}`) for load balancing
+- **MQTT Publishers**: Publish messages to topics as needed
 - **WebSocket**: Admins get all updates, regular users get only their device updates
 - **Celery**: Tasks stored in Redis DB2, results in DB3
 - **Channel Layer**: Uses Redis DB0 for WebSocket messages

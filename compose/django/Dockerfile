@@ -49,6 +49,10 @@ COPY ./compose/django/start_mqtt_handler.sh /start_mqtt_handler
 RUN cat /start_mqtt_handler | sed 's/\r$//' > /start_mqtt_handler
 RUN chmod +x /start_mqtt_handler
 
+COPY ./compose/django/start_mqtt_publisher.sh /start_mqtt_publisher
+RUN cat /start_mqtt_publisher | sed 's/\r$//' > /start_mqtt_publisher
+RUN chmod +x /start_mqtt_publisher
+
 # Copy project
 COPY . /app/
 ENTRYPOINT ["/entrypoint"]

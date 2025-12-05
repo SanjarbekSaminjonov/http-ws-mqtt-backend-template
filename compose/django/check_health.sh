@@ -6,6 +6,12 @@ set -o nounset
 # Health check for Django app
 # Checks /health/ endpoint for quick response
 
+# Check if curl is installed
+if ! command -v curl &> /dev/null; then
+    echo "Error: curl is not installed. Please install curl to run health checks."
+    exit 1
+fi
+
 MAX_RETRIES=30
 RETRY_INTERVAL=2
 

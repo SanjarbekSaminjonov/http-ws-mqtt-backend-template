@@ -6,7 +6,6 @@ Handles connection, subscription, and message processing with shared subscriptio
 import asyncio
 import logging
 from typing import Callable, Optional
-from contextlib import AsyncExitStack
 
 import aiomqtt
 from django.conf import settings
@@ -41,17 +40,17 @@ class MQTTClient:
         self._client: Optional[aiomqtt.Client] = None
         self._reconnect_interval = 5  # seconds
 
-    async def connect(self) -> aiomqtt.Client:
+    def create_client(self) -> aiomqtt.Client:
         """
-        Establish connection to MQTT broker
+        Create MQTT client instance (not connected yet)
 
         Returns:
-            Connected MQTT client instance
+            MQTT client instance
         """
         # Har bir worker unique client_id bilan connect bo'ladi
         # Bu MQTT broker da har bir connection ni alohida ko'rsatadi
         # Lekin shared subscription orqali messages load balanced bo'ladi
-        client = aiomqtt.Client(
+        return aiomqtt.Client(
             hostname=self.broker_host,
             port=self.broker_port,
             username=self.username if self.username else None,
@@ -60,13 +59,6 @@ class MQTTClient:
             keepalive=60,
             clean_session=True,
         )
-        await client.__aenter__()
-        self._client = client
-        logger.info(
-            f"Worker {self.worker_id}: Connected to MQTT broker at "
-            f"{self.broker_host}:{self.broker_port}"
-        )
-        return client
 
     async def subscribe_to_topics(self, client: aiomqtt.Client):
         """
@@ -75,9 +67,12 @@ class MQTTClient:
         Args:
             client: Connected MQTT client
         """
-        for topic in ["gate/+/status", "gate/+/command", "device/+/event"]:
+        for topic in [
+            "from_device/+/status",
+            "from_device/+/event",
+            # Add your topics here
+        ]:
             # Shared subscription format: $share/{group_name}/{topic}
-            # Bu multi-worker setup da har bir message faqat bitta workerga keladi
             shared_topic = f"$share/workers/{topic}"
             await client.subscribe(shared_topic)
             logger.info(
@@ -139,10 +134,13 @@ class MQTTClient:
         """
         while True:
             try:
-                async with AsyncExitStack() as stack:
-                    # Connect to broker
-                    client = await self.connect()
-                    await stack.enter_async_context(client)
+                # Create and connect to broker using context manager
+                async with self.create_client() as client:
+                    self._client = client
+                    logger.info(
+                        f"Worker {self.worker_id}: Connected to MQTT broker at "
+                        f"{self.broker_host}:{self.broker_port}"
+                    )
 
                     # Subscribe to topics
                     await self.subscribe_to_topics(client)
@@ -168,3 +166,5 @@ class MQTTClient:
                     exc_info=True,
                 )
                 await asyncio.sleep(self._reconnect_interval)
+            finally:
+                self._client = None

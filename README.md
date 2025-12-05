@@ -174,7 +174,7 @@ process_device_data.delay(123, {"temp": 25})
 # views.py or tasks.py
 from mqtt_service import mqtt_publisher
 
-mqtt_publisher.publish("device/001/cmd", {"action": "start"}, qos=1)
+mqtt_publisher.publish("from_device/001/event", {"action": "start"}, qos=1)
 ```
 
 ### 3. Handle MQTT Messages

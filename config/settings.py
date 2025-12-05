@@ -231,7 +231,7 @@ LOGGING = {
         "mqtt_service": {
             "handlers": ["console"],
             "level": LOG_LEVEL,
-            "propagate": True,
+            "propagate": False,
         },
     },
 }

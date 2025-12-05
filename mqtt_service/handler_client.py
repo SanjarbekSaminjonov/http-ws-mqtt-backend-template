@@ -76,10 +76,10 @@ class MQTTHandlerClient:
         ]:
             # Shared subscription format: $share/{group_name}/{topic}
             shared_topic = f"$share/handlers/{topic}"
-            await client.subscribe(shared_topic, qos=2)
+            await client.subscribe(shared_topic, qos=1)
             logger.info(
                 f"Handler {self.handler_id}: Subscribed to shared topic: {shared_topic} "
-                f"(QoS=2)"
+                f"(QoS=1)"
             )
 
     async def handle_messages(self, client: aiomqtt.Client):
@@ -95,14 +95,13 @@ class MQTTHandlerClient:
                 payload = message.payload.decode()
                 topic = str(message.topic)
 
-                logger.info(
-                    f"Handler {self.handler_id}: Received message on topic '{topic}': {payload}"
-                )
-
                 # Call message handler if provided
                 if self.message_handler:
                     await self.message_handler(topic, payload, message)
-
+                else:
+                    logger.info(
+                        f"Handler {self.handler_id}: Received message on topic '{topic}': {payload}"
+                    )
             except Exception as e:
                 logger.error(
                     f"Handler {self.handler_id}: Error processing message: {e}",

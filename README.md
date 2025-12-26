@@ -1,268 +1,154 @@
-# Django MQTT WebSocket Backend Template
+# Django + MQTT + WebSocket + Celery — IoT backend template
 
-### Django + MQTT (aiomqtt, EMQX) + WebSocket (Channels) + Celery + PostgreSQL + Redis
+Bu loyiha IoT qurilmalarni (MQTT orqali) boshqarish, fon (background) tasklar va real-time (WebSocket) eventlar uchun tayyor backend template.
 
-Universal backend template for IoT/MQTT projects with Celery task queue.
+## Stack
 
-## 🎯 Core Components
+- Django 5.2 (ASGI) + Channels (WebSocket)
+- EMQX 5.8 (MQTT broker)
+- aiomqtt (MQTT client)
+- Celery + django-celery-beat (async + schedule)
+- PostgreSQL 16
+- Redis (cache + channels layer + celery broker/result + MQTT publish queue)
+- Docker Compose (infra/app alohida)
 
-- ✅ Django 5.2.9 (ASGI + Channels)
-- ✅ MQTT Handler (aiomqtt, multi-worker, shared subscription)
-- ✅ MQTT Publisher (queue-based, persistent connection)
-- ✅ WebSocket (real-time updates)
-- ✅ Celery (async tasks + periodic scheduler)
-- ✅ PostgreSQL 16, Redis, EMQX 5.8.8
-- ✅ Docker Compose (development & production)
-
-## 🏗️ Architecture
+## Arxitektura (qisqa)
 
 ```
-MQTT Devices → EMQX Broker → MQTT Handlers (shared subscription)
-                                ↓
-                            PostgreSQL + Channel Layer
-                                ↓
-                            WebSocket Clients (owners/admins)
+Qurilma -> EMQX -> MQTT Handler(lar) [$share/handlers/from_device/+/...] -> Django logic -> WebSocket
 
-Django Views/Celery → mqtt_publisher (Redis queue) → MQTT Publisher Client → EMQX → Devices
-
-Celery Beat → Periodic Tasks → mqtt_publisher (Redis queue) → MQTT Publisher Client → EMQX → Devices
+Django view/Celery -> Redis queue (mqtt:publish_queue) -> MQTT Publisher -> EMQX -> Qurilma (to_device/<username>)
 ```
 
-## 🚀 Quick Start
+## MQTT topiclar (default)
 
-### Development (Local Django + Docker Services)
+- Qurilma -> backend:
+    - `from_device/<username>/status`
+    - `from_device/<username>/event`
+- Backend -> qurilma:
+    - `to_device/<username>`
+
+MQTT handler default qilib `$share/handlers/from_device/+/status` va `$share/handlers/from_device/+/event` ga subscribe bo‘ladi.
+
+## Ishga tushirish (Docker)
+
+### 1) `.env` tayyorlash
 
 ```bash
-# 1. Install dependencies
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# 2. Setup environment
 cp .env.example .env
-# Edit .env
-
-# 3. Start third-party services only
-docker compose -f docker-compose.thirdparty.yml up -d
-
-# 4. Run migrations
-python manage.py migrate
-python manage.py migrate django_celery_beat
-
-# 5. Create superuser
-python manage.py createsuperuser
-
-# 6. Run Django locally
-python manage.py runserver
-
-# 7. Run MQTT handler (separate terminal)
-python manage.py run_mqtt_handler --handler-id handler_local_1
-
-# 8. Run MQTT publisher (separate terminal)
-python manage.py run_mqtt_publisher --publisher-id publisher_local_1
-
-# 9. Run Celery worker (separate terminal)
-celery -A config worker -l INFO
-
-# 10. Run Celery beat (separate terminal)
-celery -A config beat -l INFO
-
-# 11. Run Celery Flower (separate terminal)
-celery -A config flower --port=5555
 ```
 
-### Production (Full Docker Deployment)
+Muhim:
+- Docker ichida `POSTGRES_HOST=postgres`, `REDIS_HOST=redis`, `MQTT_BROKER_HOST=emqx` bo‘lishi kerak.
+- `DJANGO_DEBUG=True` bo‘lsa container `runserver` bilan start bo‘ladi; aks holda `gunicorn` (ASGI/uvicorn worker) ishlaydi.
+
+### 2) Infra servislarni ishga tushirish
 
 ```bash
-# 1. Setup environment
-cp .env.example .env
-# Edit .env (set DEBUG=False)
-
-# 2. Build and start all services
-docker compose -f docker-compose.production.yml up -d --build
-
-# 3. Create superuser
-docker exec -it django_app python manage.py createsuperuser
-
-# Services:
-# - Django: http://localhost:8000
-# - EMQX Dashboard: http://localhost:18083
-# - Celery Flower: http://localhost:5555
+make run_infra
 ```
 
-### Docker Compose Files
+Bu `postgres`, `redis`, `emqx` va `my_shared_network` ni ko‘taradi.
 
-**`docker-compose.thirdparty.yml`** - Development (only infrastructure):
-- PostgreSQL
-- Redis
-- EMQX
-
-**`docker-compose.production.yml`** - Production (full stack):
-- PostgreSQL
-- Redis  
-- EMQX
-- Django App
-- MQTT Handler
-- MQTT Publisher
-- Celery Worker
-- Celery Beat
-- Celery Flower
-
-## 📁 Project Structure
-
-```
-├── config/              # Django settings, ASGI, Celery
-├── main/                # Main Django app
-│   ├── models.py        # Add your models here
-│   ├── tasks.py         # Celery tasks
-│   └── views.py
-├── mqtt_service/        # MQTT services
-│   ├── handler_client.py      # MQTTHandlerClient (subscriber/handler)
-│   ├── publisher_client.py    # MQTTPublisherClient (queue-based publisher)
-│   ├── mqtt_publisher.py      # mqtt_publisher interface (Django API)
-│   ├── handlers.py            # Message handlers (customize here)
-│   └── management/commands/   # run_mqtt_handler, run_mqtt_publisher
-├── websocket/           # WebSocket consumers
-│   ├── consumers.py     # WebSocket logic
-│   └── routing.py       # WebSocket routes
-├── compose/             # Docker scripts
-│   ├── django/          # Django container scripts
-│   └── redis/           # Redis config
-└── docker-compose.*.yml # Docker configurations
-```
-
-## 🔧 Configuration
-
-### MQTT Settings (`.env`)
-
-```env
-MQTT_BROKER_HOST=localhost  # or 'emqx' in Docker
-MQTT_BROKER_PORT=1883
-EMQX_BACKEND_USERNAME=backend
-EMQX_BACKEND_PASSWORD=your_password
-```
-
-### Celery Settings
-
-```python
-# config/settings.py
-CELERY_BROKER_URL = redis://...  # Redis DB2
-CELERY_RESULT_BACKEND = redis://...  # Redis DB3
-```
-
-## 💡 Usage Examples
-
-### 1. Create Celery Task
-
-```python
-# main/tasks.py
-from celery import shared_task
-
-@shared_task
-def process_device_data(device_id, data):
-    # Your logic
-    return result
-
-# Call task
-from main.tasks import process_device_data
-process_device_data.delay(123, {"temp": 25})
-```
-
-### 2. Publish MQTT from Django (queue + persistent publisher)
-
-```python
-# views.py or tasks.py
-from mqtt_service import mqtt_publisher
-
-mqtt_publisher.publish("from_device/001/event", {"action": "start"}, qos=1)
-```
-
-### 3. Handle MQTT Messages
-
-```python
-# mqtt_service/handlers.py
-async def handle_message(self, topic: str, payload: str, message):
-    data = json.loads(payload)
-    
-    # Your routing logic
-    if topic.startswith("device/"):
-        serial = topic.split("/")[1]
-        # Process device message
-        
-    # Send to WebSocket
-    await self.send_to_websocket(topic, data)
-```
-
-### 4. WebSocket Connection (Frontend)
-
-```javascript
-const ws = new WebSocket('ws://localhost:8000/ws/connect/');
-
-ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    console.log('MQTT Update:', data);
-};
-```
-
-## 🔍 Monitoring
-
-- **Django Admin**: http://localhost:8000/admin
-- **EMQX Dashboard**: http://localhost:18083 (admin/public)
-- **Celery Flower**: http://localhost:5555
-- **Logs**: `docker compose logs -f [service_name]`
-
-## 🧪 Testing
+### 3) App servislarni ishga tushirish
 
 ```bash
-# Test MQTT handler (local)
-python manage.py run_mqtt_handler --worker-id handler_test_1
-
-# Test MQTT publisher (local)
-python manage.py run_mqtt_publisher --publisher-id publisher_test_1
-
-# Test Celery task
-python manage.py shell
->>> from main.tasks import example_task
->>> result = example_task.delay("test")
->>> result.ready()
+make run_app
 ```
 
-## 📦 Services Overview
+Bu quyidagilarni ko‘taradi:
+- Django (`django-app`) — `http://localhost:8000`
+- MQTT handler (`mqtt-handler-1`)
+- MQTT publisher (`mqtt-publisher-1`)
+- Celery worker/beat
+- Flower — `http://localhost:5555`
 
-| Service | Port | Description |
-|---------|------|-------------|
-| Django | 8000 | Main application |
-| PostgreSQL | 5432 | Database |
-| Redis | 6379 | Cache + Channel Layer + Celery |
-| EMQX | 1883 | MQTT Broker |
-| EMQX Dashboard | 18083 | MQTT Management UI |
-| Celery Flower | 5555 | Task monitoring |
-
-## 🛠️ Common Commands
+### 4) Admin user ochish
 
 ```bash
-# Development
-python manage.py runserver
-python manage.py run_mqtt_handler --handler-id handler_dev_1
-celery -A config worker -l INFO
-celery -A config beat -l INFO
-celery -A config flower --port=5555
-
-# Production
-docker compose -f docker-compose.production.yml up -d
-docker compose -f docker-compose.production.yml logs -f
-docker compose -f docker-compose.production.yml down
-
-# Infrastructure only
-docker compose -f docker-compose.thirdparty.yml up -d
-docker compose -f docker-compose.thirdparty.yml down
+docker exec -it django-app python manage.py createsuperuser
 ```
 
-## 📝 Notes
+## Web UI orqali qurilma boshqarish (minimal flow)
 
-- **MQTT Handlers**: Use shared subscription (`$share/handlers/{topic}`) for load balancing
-- **MQTT Publishers**: Publish messages to topics as needed
-- **WebSocket**: Admins get all updates, regular users get only their device updates
-- **Celery**: Tasks stored in Redis DB2, results in DB3
-- **Channel Layer**: Uses Redis DB0 for WebSocket messages
-- **Cache**: Uses Redis DB1 for Django caching
+Bu template’da Web UI uchun tayanchlar bor:
+
+1) Qurilmalarni ro‘yxatdan o‘tkazish (Django Admin)
+- `http://localhost:8000/admin/` ga kiring
+- `Devices -> Devices` dan `username` va `password` bilan device yarating
+    - admin forma parolni `password_hash + salt` ko‘rinishida saqlaydi
+
+2) Real-time eventlar (WebSocket)
+- WebSocket endpoint: `ws(s)://<host>/ws/connect/`
+- Consumer faqat autentifikatsiyadan o‘tgan user’ni qabul qiladi (cookie session kerak).
+- Backend’dan WS ga yuborish:
+    - `src/websocket/utils/senders.py` dagi `websocket_sender` orqali
+
+3) Qurilmaga buyruq yuborish (MQTT publish queue)
+- Django kodidan (view/task) publish qilish:
+
+```python
+from apps.mqtt_service.mqtt_publisher import mqtt_publisher
+
+mqtt_publisher.publish(
+        topic="to_device/device_001",
+        payload={"cmd": "reboot"},
+        qos=1,
+)
+```
+
+MQTT Publisher service Redis queue’dan olib, EMQX ga publish qiladi.
+
+## Background tasklar (Celery)
+
+- Namuna task: `src/apps/main/tasks.py` dagi `example_task`
+- Beat scheduler: `django_celery_beat` (jadvalni admin paneldan boshqarasiz)
+
+Misol:
+
+```python
+from apps.main.tasks import example_task
+example_task.delay("Hello")
+```
+
+WebSocket’ga event yuborish misoli:
+
+```python
+from websocket.utils.senders import websocket_sender
+
+websocket_sender.send_to_user(user_id=1, payload={"type": "device.event", "data": {"ok": True}})
+```
+
+## Monitoring va foydali URLlar
+
+- Django: `http://localhost:8000/`
+- Healthcheck: `http://localhost:8000/health/`
+- Django Admin: `http://localhost:8000/admin/`
+- EMQX Dashboard: `http://localhost:18083/` (`MQTT_ROOT_USERNAME`/`MQTT_ROOT_PASSWORD`)
+- Flower: `http://localhost:5555/`
+
+Loglar:
+
+```bash
+docker compose -p app -f docker-compose.app.yml logs -f
+docker compose -p infra -f docker-compose.infra.yml logs -f emqx
+```
+
+## MQTT Auth/ACL haqida eslatma
+
+- EMQX authentication 2 xil:
+    - built-in database (dashboard/root user)
+    - PostgreSQL (qurilmalar) — `devices_device` jadvalidan `password_hash` va `salt` ni o‘qiydi.
+- ACL fayl: `compose/emqx/acl.conf`.
+    - Qurilmalar default qilib faqat o‘z topiclariga publish qiladi (`from_device/<username>/...`) va o‘z command topic’iga subscribe qiladi (`to_device/<username>`).
+    - Backend (handler/publisher) uchun kengroq ruxsat kerak bo‘lsa, ACL’ni loyihangiz talabiga ko‘ra yangilang.
+
+## Make komandalar
+
+```bash
+make ls
+make run_infra
+make down_infra
+make run_app
+make down_app
+```

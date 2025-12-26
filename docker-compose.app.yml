@@ -10,7 +10,6 @@ services:
     volumes:
       - ./src/media:/app/media
       - ./src/static:/app/static
-      - ./src:/app/ # For development purposes
     env_file:
       - .env
     ports:
@@ -24,90 +23,90 @@ services:
     networks:
       - my_shared_network
 
-  # mqtt_handler_1:
-  #   image: django_core
-  #   build:
-  #     context: ./src
-  #     dockerfile: ./compose/django/Dockerfile
-  #   container_name: mqtt-handler-1
-  #   restart: always
-  #   command: bash /start_mqtt_handler
-  #   environment:
-  #     - MQTT_HANDLER_ID=mqtt-handler-1
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     django_app:
-  #       condition: service_healthy
-  #   networks:
-  #     - my_shared_network
+  mqtt_handler_1:
+    image: django_core
+    build:
+      context: .
+      dockerfile: ./compose/django/Dockerfile
+    container_name: mqtt-handler-1
+    restart: always
+    command: bash /start_mqtt_handler
+    environment:
+      - MQTT_HANDLER_ID=mqtt-handler-1
+    env_file:
+      - .env
+    depends_on:
+      django_app:
+        condition: service_healthy
+    networks:
+      - my_shared_network
 
-  # mqtt_publisher_1:
-  #   image: django_core
-  #   build:
-  #     context: ./src
-  #     dockerfile: ./compose/django/Dockerfile
-  #   container_name: mqtt-publisher-1
-  #   restart: always
-  #   command: bash /start_mqtt_publisher
-  #   environment:
-  #     - MQTT_PUBLISHER_ID=mqtt-publisher-1
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     django_app:
-  #       condition: service_healthy
-  #   networks:
-  #     - my_shared_network
+  mqtt_publisher_1:
+    image: django_core
+    build:
+      context: .
+      dockerfile: ./compose/django/Dockerfile
+    container_name: mqtt-publisher-1
+    restart: always
+    command: bash /start_mqtt_publisher
+    environment:
+      - MQTT_PUBLISHER_ID=mqtt-publisher-1
+    env_file:
+      - .env
+    depends_on:
+      django_app:
+        condition: service_healthy
+    networks:
+      - my_shared_network
 
-  # celery_worker:
-  #   image: django_core
-  #   build:
-  #     context: ./src
-  #     dockerfile: ./compose/django/Dockerfile
-  #   container_name: celery-worker
-  #   restart: always
-  #   command: bash /start_celery_worker
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     django_app:
-  #       condition: service_healthy
-  #   networks:
-  #     - my_shared_network
+  celery_worker:
+    image: django_core
+    build:
+      context: .
+      dockerfile: ./compose/django/Dockerfile
+    container_name: celery-worker
+    restart: always
+    command: bash /start_celery_worker
+    env_file:
+      - .env
+    depends_on:
+      django_app:
+        condition: service_healthy
+    networks:
+      - my_shared_network
 
-  # celery_beat:
-  #   image: django_core
-  #   build:
-  #     context: ./src
-  #     dockerfile: ./compose/django/Dockerfile
-  #   container_name: celery-beat
-  #   restart: always
-  #   command: bash /start_celery_beat
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     django_app:
-  #       condition: service_healthy
-  #   networks:
-  #     - my_shared_network
+  celery_beat:
+    image: django_core
+    build:
+      context: .
+      dockerfile: ./compose/django/Dockerfile
+    container_name: celery-beat
+    restart: always
+    command: bash /start_celery_beat
+    env_file:
+      - .env
+    depends_on:
+      django_app:
+        condition: service_healthy
+    networks:
+      - my_shared_network
 
-  # celery_flower:
-  #   image: django_core
-  #   build:
-  #     context: ./src
-  #     dockerfile: ./compose/django/Dockerfile
-  #   container_name: celery-flower
-  #   restart: always
-  #   command: bash /start_celery_flower
-  #   env_file:
-  #     - .env
-  #   ports:
-  #     - "5555:5555"
-  #   depends_on:
-  #     - celery_worker
-  #   networks:
-  #     - my_shared_network
+  celery_flower:
+    image: django_core
+    build:
+      context: .
+      dockerfile: ./compose/django/Dockerfile
+    container_name: celery-flower
+    restart: always
+    command: bash /start_celery_flower
+    env_file:
+      - .env
+    ports:
+      - "5555:5555"
+    depends_on:
+      - celery_worker
+    networks:
+      - my_shared_network
 
 networks:
   my_shared_network:

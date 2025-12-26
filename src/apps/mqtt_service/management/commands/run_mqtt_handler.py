@@ -8,8 +8,8 @@ import logging
 import os
 from django.core.management.base import BaseCommand
 
-from mqtt_service.handler_client import MQTTHandlerClient
-from mqtt_service.mqtt_handlers import MessageHandler
+from apps.mqtt_service.handler_client import MQTTHandlerClient
+from apps.mqtt_service.mqtt_handlers import MessageHandler
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ from django.db import models
 
 
 class BaseDevice(models.Model):
-    username = models.CharField(max_length=150)
+    username = models.CharField(max_length=150, unique=True)
     password_hash = models.CharField(max_length=256)
     salt = models.CharField(max_length=64)
 

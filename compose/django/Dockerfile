@@ -54,5 +54,5 @@ RUN cat /start_mqtt_publisher | sed 's/\r$//' > /start_mqtt_publisher
 RUN chmod +x /start_mqtt_publisher
 
 # Copy project
-# COPY ./src /app/  # Moved to docker-compose for development purposes
+COPY ./src /app/
 ENTRYPOINT ["/entrypoint"]

@@ -1,0 +1,88 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - my_shared_network
+
+  redis:
+    image: redis:7
+    container_name: redis
+    command: ["sh", "-c", "redis-server /usr/local/etc/redis/redis.conf --requirepass \"$REDIS_PASSWORD\""]
+    restart: always
+    volumes:
+      - ./compose/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - redis_data:/data
+    networks:
+      - my_shared_network
+
+  emqx:
+    image: emqx:5.8.8
+    container_name: emqx
+    restart: always
+    ports:
+      - "1883:1883"
+      - "18083:18083"
+    environment:
+      - EMQX_NAME=emqx
+      - EMQX_NODE__NAME=emqx@emqx
+      - EMQX_NODE__COOKIE=supersecretcookie
+      - EMQX_CLUSTER__DISCOVERY_STRATEGY=static
+      - EMQX_CLUSTER__STATIC__SEEDS=emqx@emqx
+      - EMQX_ALLOW_ANONYMOUS="false"
+      # --- LISTENERS ---
+      - EMQX_LISTENERS__TCP__DEFAULT__ENABLE=true
+      - EMQX_LISTENERS__SSL__DEFAULT__ENABLE=false
+      - EMQX_LISTENERS__WS__DEFAULT__ENABLE=false
+      - EMQX_LISTENERS__WSS__DEFAULT__ENABLE=false
+      # --- AUTHENTICATION & AUTHORIZATION ---
+      # 1. Built-in Database Authentication
+      - EMQX_AUTHENTICATION__1__BACKEND=built_in_database
+      - EMQX_AUTHENTICATION__1__MECHANISM=password_based
+      - EMQX_AUTHENTICATION__1__PASSWORD_HASH_ALGORITHM__NAME=sha256
+      - EMQX_AUTHENTICATION__1__PASSWORD_HASH_ALGORITHM__SALT_POSITION=suffix
+      - EMQX_AUTHENTICATION__1__ENABLE=true
+      # 2. PostgreSQL Authentication
+      - EMQX_AUTHENTICATION__2__BACKEND=postgresql
+      - EMQX_AUTHENTICATION__2__MECHANISM=password_based
+      - EMQX_AUTHENTICATION__2__SERVER=postgres:5432
+      - EMQX_AUTHENTICATION__2__DATABASE=${POSTGRES_DB}
+      - EMQX_AUTHENTICATION__2__USERNAME=${POSTGRES_USER}
+      - EMQX_AUTHENTICATION__2__PASSWORD=${POSTGRES_PASSWORD}
+      - EMQX_AUTHENTICATION__2__PASSWORD_HASH_ALGORITHM__NAME=sha256
+      - EMQX_AUTHENTICATION__2__PASSWORD_HASH_ALGORITHM__SALT_POSITION=suffix
+      - EMQX_AUTHENTICATION__2__QUERY=SELECT password_hash, salt FROM devices_device where username = $${username} LIMIT 1
+      - EMQX_AUTHENTICATION__2__ENABLE=true
+      # ACL Authorization using rules
+      - EMQX_AUTHORIZATION__SOURCES__1__TYPE=file
+      - EMQX_AUTHORIZATION__SOURCES__1__PATH=/opt/emqx/data/authz/acl.conf
+      - EMQX_AUTHORIZATION__SOURCES__1__ENABLE=true
+      # Dashboard uchun default foydalanuvchi
+      - EMQX_DASHBOARD__DEFAULT_USERNAME=${MQTT_ROOT_USERNAME}
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=${MQTT_ROOT_PASSWORD}
+    volumes:
+      - ./compose/emqx/acl.conf:/opt/emqx/data/authz/acl.conf
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+    networks:
+      - my_shared_network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  redis_data:
+  emqx_data:
+  emqx_log:
+
+networks:
+  my_shared_network:
+    name: my_shared_network
+    driver: bridge

@@ -22,3 +22,9 @@ Thumbs.db
 .eggs/
 build/
 dist/
+
+# EMQX configuration and authorization files
+compose/emqx/configs/*
+!compose/emqx/configs/cluster.hocon
+compose/emqx/authz/*
+!compose/emqx/authz/acl.conf

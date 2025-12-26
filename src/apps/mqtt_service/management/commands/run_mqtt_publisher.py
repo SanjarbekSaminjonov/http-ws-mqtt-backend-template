@@ -8,7 +8,7 @@ import logging
 import os
 from django.core.management.base import BaseCommand
 
-from mqtt_service.publisher_client import MQTTPublisherClient
+from apps.mqtt_service.publisher_client import MQTTPublisherClient
 
 logger = logging.getLogger(__name__)
 

@@ -3,26 +3,25 @@ services:
     image: postgres:16
     container_name: postgres
     restart: always
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    env_file:
-      - .env
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - my_shared_network
 
   redis:
-    image: redis_custom
-    build:
-      context: .
-      dockerfile: ./compose/redis/Dockerfile
+    image: redis:7
     container_name: redis
+    command: ["sh", "-c", "redis-server /usr/local/etc/redis/redis.conf --requirepass \"$REDIS_PASSWORD\""]
     restart: always
-    ports:
-      - "6379:6379"
     volumes:
+      - ./compose/redis/redis.conf:/usr/local/etc/redis/redis.conf
       - redis_data:/data
-    env_file:
-      - .env
+    networks:
+      - my_shared_network
 
   emqx:
     image: emqx:5.8.8
@@ -38,11 +37,13 @@ services:
       - EMQX_CLUSTER__DISCOVERY_STRATEGY=static
       - EMQX_CLUSTER__STATIC__SEEDS=emqx@emqx
       - EMQX_ALLOW_ANONYMOUS="false"
+      - EMQX_DASHBOARD__DEFAULT_USERNAME=${EMQX_DASHBOARD_USERNAME}
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=${EMQX_DASHBOARD_PASSWORD}
     volumes:
       - emqx_data:/opt/emqx/data
       - emqx_log:/opt/emqx/log
-    env_file:
-      - .env
+    networks:
+      - my_shared_network
     depends_on:
       - postgres
 
@@ -51,3 +52,8 @@ volumes:
   redis_data:
   emqx_data:
   emqx_log:
+
+networks:
+  my_shared_network:
+    name: my_shared_network
+    driver: bridge

@@ -12,7 +12,7 @@ from django.core.cache import cache
 logger = logging.getLogger(__name__)
 
 # Import QUEUE_KEY from publisher client
-from mqtt_service.publisher_client import MQTTPublisherClient
+from apps.mqtt_service.publisher_client import MQTTPublisherClient
 
 
 class MQTTPublisherInterface:
@@ -36,7 +36,7 @@ class MQTTPublisherInterface:
             bool: True if queued successfully
 
         Usage:
-            from mqtt_service.mqtt_publisher import mqtt_publisher
+            from apps.mqtt_service.mqtt_publisher import mqtt_publisher
             mqtt_publisher.publish("device/001/cmd", {"action": "start"}, qos=1)
         """
         try:
@@ -65,7 +65,7 @@ class MQTTPublisherInterface:
         Queue MQTT message for publishing (async context)
 
         Usage:
-            from mqtt_service.mqtt_publisher import mqtt_publisher
+            from apps.mqtt_service.mqtt_publisher import mqtt_publisher
             await mqtt_publisher.publish_async("device/001/cmd", {"action": "start"})
         """
         return self.publish(topic, payload, qos, retain)

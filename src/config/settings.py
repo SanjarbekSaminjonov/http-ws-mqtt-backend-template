@@ -54,8 +54,9 @@ INSTALLED_APPS = (
         "django_celery_beat",
     ]
     + [
-        "main.apps.MainConfig",
-        "mqtt_service.apps.MqttServiceConfig",
+        "apps.main.apps.MainConfig",
+        "apps.mqtt_service.apps.MqttServiceConfig",
+        "apps.devices.apps.DevicesConfig",
     ]
 )
 

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from main.views import IndexView, check_mqtt_user, health_check
+from apps.main.views import IndexView, check_mqtt_user, health_check
 
 app_name = "main"
 

@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
 # Set work directory
 WORKDIR /app
 
-COPY ./requirements.txt /app/requirements.txt
+COPY ./src/requirements.txt /app/requirements.txt
 
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
@@ -54,5 +54,5 @@ RUN cat /start_mqtt_publisher | sed 's/\r$//' > /start_mqtt_publisher
 RUN chmod +x /start_mqtt_publisher
 
 # Copy project
-COPY . /app/
+# COPY ./src /app/  # Moved to docker-compose for development purposes
 ENTRYPOINT ["/entrypoint"]

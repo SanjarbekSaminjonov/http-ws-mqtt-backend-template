@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class MqttServiceConfig(AppConfig):
+class MainConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "mqtt_service"
+    name = "apps.main"

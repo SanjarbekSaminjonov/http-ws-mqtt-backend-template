@@ -1,4 +1,4 @@
-Django==5.2.9
+Django==5.2.11
 environs==14.5.0
 psycopg2-binary==2.9.11
 aiomqtt==2.4.0
